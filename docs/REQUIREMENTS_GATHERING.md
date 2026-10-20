@@ -18,7 +18,7 @@ The application should let users maintain reusable CV content, assemble independ
 
 ## Product scope for Version 1
 
-Version 1 is a local-first graphical desktop application for building CVs. It is intended to be used by multiple candidates, with each candidate having an independent collection of source content, templates, CV versions, overrides, and rendered documents.
+Version 1 is a local-first graphical desktop application for building CVs. It is intended to be used by multiple candidates, with each candidate having an independent collection of Source content, Styling files, CV Composer files, and rendered documents.
 
 The primary CV type is **Industry**. The design should allow a small set of additional predefined CV types later, but Version 1 should focus on Industry CVs.
 
@@ -50,7 +50,10 @@ The primary CV type is **Industry**. The design should allow a small set of addi
 
 ### YAML storage and reliability
 
-- Source content, templates, CV definitions, overrides, and related data are stored in user-accessible YAML files.
+- Source content, Styling files, CV Composer files, overrides, and related data are stored in user-accessible YAML files.
+- A Styling file stores appearance configuration.
+- A CV Composer file stores the composition for one CV version, including its Styling reference, Source references, ordering, and local overrides.
+- A Source file stores reusable candidate sections, blocks, canonical entries, variants, tags, and source metadata.
 - YAML files include an explicit schema version.
 - The application validates both YAML syntax and the expected data structure.
 - Invalid or malformed YAML must produce an understandable error identifying the problem where possible.
@@ -65,9 +68,9 @@ The primary CV type is **Industry**. The design should allow a small set of addi
 - Conflict resolution is file-level in Version 1: the user chooses the complete local file or the complete external file.
 - Field-by-field merging is out of scope for Version 1.
 
-### Source library
+### Source
 
-The source library contains reusable candidate content. It is separate from the presentation templates.
+The Source contains reusable candidate content. It is separate from the presentation Styling.
 
 Supported or required source content includes:
 
@@ -82,7 +85,6 @@ Source content is organized through the following concepts:
 
 - **Canonical entry:** a user-labeled underlying item with a stable unique ID. Example: one particular bachelor’s degree.
 - **Variant:** an alternative version of a canonical entry, with its own unique ID and tags.
-- **Local override:** CV-specific YAML content that overrides a referenced source item without changing the source library.
 
 Requirements:
 
@@ -105,38 +107,43 @@ Requirements:
 
 ### Source save actions
 
-When working on a CV, the current block is always saved to the current CV version first. The user may then explicitly choose how source content should be handled:
+When editing a block in a CV, the application keeps the changes as an in-memory draft until the user chooses an explicit save action:
 
 - **Save version:** save the current content only to the current CV version as a local override. The source entry is not changed.
-- **Replace source:** update the existing reusable source variant under the existing variant ID and increment its source revision. Other CV versions keep their existing source reference and revision until they are reviewed.
-- **Save copy to source:** create a new reusable source variant with a new ID and make the current CV version reference that new variant.
+- **Replace source:** update the existing reusable source variant under the existing variant ID, increment its source revision, and update its last-modified timestamp and content hash. Other CV versions keep their existing source reference metadata and receive a warning when the change is detected.
+- **Save copy to source:** create a new reusable source variant with a new ID and make the current CV version reference that new variant. If the current CV block has a local override, remove that override so the CV uses the new source variant.
 
 Local overrides are not directly promoted. If the user wants to reuse an override, they save it as a new source variant.
 
 These actions have the following consequences:
 
-- Saving a version never changes the reusable source library.
-- Replacing a source changes the source library but does not immediately rewrite any other CV definition or rendered PDF.
-- Saving a copy creates a new source variant; it does not modify the original variant or other CV versions.
-- A local override is specific to one CV version and is not visible as a reusable source variant.
+- Saving a version never changes the reusable Source.
+- Replacing a source changes the Source but does not immediately rewrite any other CV Composer or rendered PDF.
+- Saving a copy creates a new source variant; it does not modify the original variant or other CV versions. The current CV switches from its local override, if any, to the new variant.
+- A local override is specific to one CV version and stored inside the CV composer file. Consequently, it is not visible as a reusable Source variant.
+- A local override always takes precedence over its referenced source variant.
+- A source change may still produce a warning for a block with a local override, but it does not change that block's rendered content while the override exists.
+- A block with a local override displays an indicator showing that its content differs from the reusable source.
 - A local override can be removed if the user wants the CV to use its referenced source variant again.
 
 ### Source references, revisions, and historical behavior
 
 CV versions use a combination of references and local materialized content:
 
-- An unmodified CV block stores a reference to a source variant and the source revision used by that CV.
+- An unmodified CV block stores a reference to a source variant and the source metadata observed by that CV: source revision, last-modified timestamp, and content hash.
 - A block edited and saved to the CV stores its content in a CV-specific local override. It no longer depends on later changes to the referenced source variant until the user removes the override.
-- A CV section stores its template/reference information and any CV-specific section settings, such as a local section-title nickname.
-- A rendered PDF is a saved historical artifact. It remains unchanged after a source or template change until the user explicitly previews or renders the CV again and confirms any overwrite.
+- A local override always wins over the referenced source variant. The application may warn when the underlying source changes, but the override remains the content used for preview and rendering.
+- A CV section stores its CV Composer reference and any CV-specific section settings, such as a local section-title nickname.
+- A rendered PDF is a saved historical artifact. It remains unchanged after a Source or Styling change until the user explicitly previews or renders the CV again and confirms any overwrite.
 - A CV definition that still references a source variant is not silently rewritten when that source changes.
-- If the referenced source revision is newer than the revision recorded in the CV, the CV is considered stale for that block.
-- The application detects a stale reference when the user opens the relevant editor, previews, or renders the CV. It must prompt the user before applying the newer source content.
-- The prompt must identify the affected source and CV content and provide an explicit choice.
-- Keeping the previous CV content creates or retains a local override based on the previously used source revision.
-- Accepting the newer source updates the CV's recorded source revision and uses the newer source content.
-- Replacing the source from the editor updates the source variant and its revision. The currently edited CV may use the replacement immediately; other CVs are not changed until they are reviewed.
-- A CV can therefore reproduce its previously used content through its rendered PDF or through a local override, but a source reference by itself intentionally follows source revisions after the user reviews and accepts the change.
+- If the current source revision, timestamp, or content hash differs from the metadata recorded in the CV, the CV block is considered outdated.
+- The application detects an outdated reference when the user opens the relevant editor, previews, or renders the CV.
+- The application displays a warning identifying the affected source and CV content.
+- Preview may continue using the current source content after the warning.
+- Final rendering/export requires confirmation after the warning.
+- A block with a local override may display a source-change warning, but its preview and rendering continue to use the override.
+- The source reference alone cannot reconstruct the previously used structured content after the source changes. To preserve that content, the user must already have a local override or separate source variant; the exported PDF remains available as visual history.
+- Replacing the source updates the source variant's revision, timestamp, and content hash. Other CVs retain their recorded metadata and are warned when they later detect the change.
 
 #### Required source-change scenarios
 
@@ -145,9 +152,9 @@ The following behavior must be testable:
 1. Two CVs reference the same source variant at revision 1.
 2. The user chooses **Replace source** while editing CV A. The source becomes revision 2.
 3. CV B's YAML reference remains unchanged and its existing rendered PDF remains unchanged.
-4. When CV B is opened, previewed, or rendered, the application reports that its source reference is stale and asks how to proceed.
-5. If the user keeps the previous content, CV B receives a local override and remains stable even if the source changes again.
-6. If the user accepts the newer source, CV B records revision 2 and uses that source content.
+4. When CV B is opened, previewed, or rendered, the application warns that its source reference is outdated.
+5. CV B may be previewed using the current source content, but final rendering/export requires confirmation.
+6. If the user wants to preserve the previous structured content, CV B must already have a local override or separate source variant; the source reference alone is not sufficient.
 7. If the user chooses **Save copy to source**, a new variant ID is created, the original variant remains unchanged, and the current CV references the new variant.
 8. If the user chooses **Save version**, only the current CV's local override changes; no source entry or other CV changes.
 
@@ -164,7 +171,7 @@ Each Work Experience entry supports:
 - An ongoing role may display text such as `Current` instead of an end date.
 - Description bullets.
 
-Dates are stored as dates when provided, while the template controls their display format.
+Dates are stored as dates when provided, while the selected Styling controls their display format.
 
 #### Education
 
@@ -209,37 +216,45 @@ Each Education entry supports:
 - Predefined custom layouts may be provided for common cases such as Personal Interests.
 - Custom sections should use the predefined design system rather than unrestricted formatting.
 
-### Templates
+### Styling
 
-Templates define presentation and structure separately from candidate source content.
+Styling files define appearance separately from candidate Source content and CV Composer references.
 
-- A template defines section order, section labels, nesting, and rendering rules.
-- A template section references a generic content type.
-- The template label can differ from the generic type. For example, a section referencing `Work Experience` may be labeled `Academic Positions`.
-- Sections are primarily template-defined containers, not reusable candidate source entries.
+- A Styling file defines fonts, font sizes, spacing, alignment, colors, borders, and layout rules.
+- Built-in Styling files are read-only assets.
+- User-created Styling copies may be writable and reusable by other CV Composers.
+- The application discovers and validates Styling files before offering them for selection.
+- A valid changed Styling file affects future previews and renders of CVs that reference it.
+- Existing rendered PDFs remain unchanged until explicitly regenerated and overwritten.
+- Users choose from supported design options rather than entering arbitrary formatting values.
+- Styling editing is not part of the normal CV editor.
+- An advanced feature for creating or editing custom Styling files may be added later.
+
+### CV Composer
+
+A CV Composer is the YAML file for one CV version. It defines how Source content is assembled, defines local overrides and which Styling file is used.
+
+- A CV Composer references a Styling file.
+- It references Source sections, blocks, canonical entries, and variants.
+- It defines section order, section labels, nesting, selected blocks, and local overrides.
+- The displayed section label can differ from the generic content type. For example, a section referencing `Work Experience` may be labeled `Academic Positions`.
+- Sections are CV Composer containers for selected Source content, not reusable Source entries.
 - A CV version may locally override a section’s displayed title, such as using `Experience` instead of `Work Experience`.
-- Template sections contain a consistent block design.
-- The application repeats that block design for each selected block in the section.
+- Each section uses the consistent block design provided by the selected Styling.
+- The application repeats that design for each selected block in the section.
 - Work Experience and Education use repeated entry layouts.
 - Skills use a dedicated repeated category layout.
 - Summary uses a single paragraph text block.
-- Templates use a predefined design system for fonts, font sizes, spacing, alignment, colors, borders, and layouts.
-- Users choose from supported design options rather than entering arbitrary formatting values.
-- Users can edit templates through the GUI.
-- Users can create a blank template through the GUI.
-- A blank template allows users to add sections and choose their generic content types.
-- Starter templates are provided so users do not need to start from nothing.
-- Editing a starter template creates a unique modified copy.
-- A candidate-specific template copy does not modify the original starter template or templates used by other candidates.
-- A separate advanced template-authoring feature may be added later.
+- Users can create a blank CV Composer and add sections by choosing their generic content types.
+- A CV Composer is independent from the Styling file and the Source content it references.
 
 ### CV versions
 
 - Users can create multiple CV versions for a candidate.
 - Versions are independent saved compositions.
-- A new CV can be created from the source library.
+- A new CV can be created from the Source.
 - A new CV can also be created by duplicating an existing CV version.
-- A duplicated CV can use a different template.
+- A duplicated CV can use a different Styling file and CV Composer configuration.
 - Users can explicitly choose to save changes as a new version or replace the current version.
 - Each version has a unique ID.
 - Version names are not required for Version 1.
@@ -250,23 +265,25 @@ Templates define presentation and structure separately from candidate source con
 - Optional sections such as Portfolio and Personal Interests can be omitted.
 - A source block selected for a CV is unique within that CV version; the same canonical entry cannot contribute multiple variants to the same version.
 - Source updates do not immediately rewrite other CV definitions or rendered PDFs.
-- When a CV is opened or its content is edited, previewed, or rendered, the application detects whether a referenced source revision has changed.
-- A stale source reference requires an explicit user decision before the newer source content is applied.
-- The application presents options such as keeping the previous content through a local override, accepting the newer source, replacing the source, or creating a source variant.
+- When a CV is opened or its content is edited, previewed, or rendered, the application detects whether a referenced source revision, timestamp, or content hash has changed.
+- An outdated source reference produces a warning. Preview may continue, while final rendering/export requires confirmation.
+- The application presents the source-change warning and identifies the affected source and CV content. Preserving previous structured content requires an existing local override or separate source variant.
 - Source changes are not silently propagated to other CV versions.
 
 ### Editing and formatting
 
 - Users edit blocks inside the application.
 - A block must be completed before it can be saved.
+- An edited block remains an in-memory draft until the user explicitly chooses Save version, Replace source, or Save copy to source.
+- Every edited block must be explicitly saved or cancelled before the CV can be previewed or rendered.
 - Optional fields may remain empty.
 - Incomplete blocks can be cancelled and discarded.
-- Cancelled blocks are not saved to the source library or CV version.
+- Cancelled blocks are not saved to the Source or CV version.
 - Users can apply content-level:
   - Bold.
   - Italic.
   - Hyperlinks.
-- Fonts, font sizes, alignment, spacing, and layout are controlled by the selected template.
+- Fonts, font sizes, alignment, spacing, and layout are controlled by the selected Styling file.
 - Direct arbitrary font and layout customization is out of scope for Version 1.
 - Undo and redo are not required for Version 1.
 
@@ -292,7 +309,7 @@ Templates define presentation and structure separately from candidate source con
 - Such a block moves to the next page.
 - Following blocks may continue on that page or later pages.
 - Manual page-break management is not required for Version 1.
-- Each CV has a rendered PDF stored alongside its definition, local template, and overrides.
+- Each CV has a rendered PDF stored alongside its CV Composer file and local overrides.
 - Re-rendering overwrites the existing PDF only after warning the user and receiving confirmation.
 - Users can copy rendered PDFs elsewhere if they want to retain historical copies.
 
@@ -302,7 +319,7 @@ The candidate workspace should contain a structure conceptually equivalent to:
 
 - Reusable source content.
 - CV definitions/versions.
-- The local template associated with each CV.
+- The Styling reference associated with each CV Composer.
 - CV-specific local overrides.
 - The rendered PDF for each CV.
 
@@ -327,8 +344,8 @@ The exact YAML file names and directory layout remain implementation details to 
 - Automatic classification of OCR-extracted content.
 - Application tracking or an archive of which CV was sent to which application.
 - DOCX export as the primary output.
-- Unrestricted template authoring.
-- A separate advanced template-creation application.
+- Unrestricted Styling authoring.
+- A separate advanced Styling-creation application.
 - Field-by-field synchronization conflict resolution.
 - Required undo/redo support.
 - Manual page-break management.
@@ -337,12 +354,12 @@ The exact YAML file names and directory layout remain implementation details to 
 
 ## Important assumptions
 
-- The candidate profile is stored separately from reusable CV content and is used by the header template.
+- The candidate profile is stored separately from reusable CV content and is used by the header Styling.
 - Email is expected to be required in the candidate profile, while location and phone are optional.
 - Work Experience and Education have type-specific validation rules, but the exact required-field matrix is not yet finalized.
 - The application will use a GUI editor capable of handling paragraphs, bullets, bold, italic, and hyperlinks.
 - YAML is primarily edited by the application, but users are intentionally allowed to inspect, back up, synchronize, and potentially modify it externally.
-- The source-change workflow will require source revision metadata and references from CV definitions to source IDs and revisions.
+- The source-change workflow will require source revision numbers, last-modified timestamps, content hashes, and references from CV definitions to source IDs and the recorded source metadata.
 - A local override is version-specific and is represented separately from the reusable source entry.
 
 ## Open questions to resolve before implementation
@@ -352,7 +369,7 @@ The exact YAML file names and directory layout remain implementation details to 
 3. Which fields are mandatory for each content type, especially Work Experience and Education?
 4. Is email mandatory in the candidate profile, or merely recommended?
 5. Should social links wrap onto additional header lines when they do not fit, or should the app warn the user?
-6. What starter templates and predefined CV types should ship with Version 1?
+6. What starter Styling files and predefined CV types should ship with Version 1?
 7. Which predefined font, size, spacing, color, and layout choices belong in the design system?
 8. How should source-change review present differences to the user?
 9. Should a later version provide a central view of all CV versions with stale source references?
@@ -363,12 +380,12 @@ The exact YAML file names and directory layout remain implementation details to 
 
 ## Architectural implications without prescribing an implementation
 
-- The data model must distinguish generic content meaning from template presentation.
-- Stable IDs are needed for candidates, canonical entries, variants, sections, blocks, CV versions, templates, and local overrides.
+- The data model must distinguish generic content meaning from Styling presentation and CV Composer selection.
+- Stable IDs are needed for candidates, canonical entries, variants, sections, blocks, CV versions, Styling files, CV Composers, and local overrides.
 - Source variants need parent-child relationships to their canonical entries.
 - CV definitions need references to source IDs and the source revisions used, plus local overrides for edited CV-specific content.
 - Saved CV behavior must distinguish live source references, CV-local overrides, and rendered PDF artifacts.
-- Templates need references from presentation sections to generic content types.
+- CV Composers need references to Source content and Styling files; Styling defines the presentation rules.
 - The rendering process must understand semantic content types and their different layouts.
 - The editor needs a controlled rich-text representation for bold, italic, hyperlinks, paragraphs, and bullets.
 - YAML validation and schema versioning are core product capabilities, not incidental implementation details.
@@ -385,7 +402,7 @@ Version 1 should be considered functionally complete when a user can:
 3. Create a candidate profile and manage repeatable links.
 4. Add reusable source entries and variants with tags.
 5. Search source variants by type and tags.
-6. Create a CV from a starter or blank template.
+6. Create a CV Composer using a selected Styling file and blank or predefined section configuration.
 7. Add, remove, and reorder sections and blocks.
 8. Select source variants and create CV-specific overrides.
 9. Edit content inside the GUI with the supported formatting controls.

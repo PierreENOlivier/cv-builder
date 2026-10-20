@@ -45,7 +45,7 @@ Additional rules:
 - Use descriptive names that communicate meaning.
 - Avoid vague names such as `data`, `thing`, `temp`, or `obj` when a more precise name is available.
 - Use verbs for functions that perform actions, such as `load_cv()` or `validate_entry()`.
-- Use nouns for classes and objects representing concepts, such as `Candidate`, `CVVersion`, and `Template`.
+- Use nouns for classes and objects representing concepts, such as `Candidate`, `Source`, `Styling`, and `CVComposer`.
 - Do not use abbreviations unless they are widely understood in the project context.
 - Do not use names that shadow Python built-ins, such as `list`, `dict`, `str`, or `id`.
 

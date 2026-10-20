@@ -41,7 +41,7 @@ Path:
   2. Save a new reusable variant with a new unique ID.
   3. Save a CV-specific local override without changing reusable source content.
 - Source changes must not be silently propagated to other CVs.
-- Templates define presentation separately from candidate source content.
+- Styling files define presentation separately from candidate source content.
 
 ## Data integrity
 - Validate YAML syntax and schema before using persisted data.
@@ -64,7 +64,7 @@ Before working on a task, read the applicable guide(s) below. Do not load every 
 - Architecture, boundaries, dependency direction, or design decisions: `docs/agent-guides/architecture.md`
 - Domain concepts, IDs, variants, CV composition, overrides: `docs/agent-guides/domain-model.md`
 - YAML files, schema validation, save/reload, recovery, external changes: `docs/agent-guides/persistence.md`
-- Rich text, templates, preview, pagination, PDF export: `docs/agent-guides/rendering.md`
+- Rich text, styling templates, preview, pagination, PDF export: `docs/agent-guides/rendering.md`
 - Tests, review, quality checks: `docs/agent-guides/testing-and-review.md`
 - Agent workflow, plans, ADRs, approval gates: `docs/agent-guides/workflow.md`
 - Python code style, naming, imports, type hints, docstrings, and formatting: `docs/agent-guides/code-styling.md`

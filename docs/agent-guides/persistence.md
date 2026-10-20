@@ -3,9 +3,10 @@
 Use this guide for YAML serialization, schema versions, workspace layout, saving, reloading, recovery, and external file changes.
 
 ## Required behavior
-- Source content, templates, CV definitions, overrides, and related data are stored in user-accessible YAML files.
+- Source content, Styling files, CV Composer files, and related data are stored in user-accessible YAML files.
 - YAML has explicit schema-version information.
 - Validate both YAML syntax and expected structure.
+- Validate Styling files before adding them to the style selection.
 - Give understandable errors and identify the affected file/field where possible.
 - Never silently discard or overwrite invalid or conflicting data.
 - Main-file saves are explicit. Recovery/interim files do not silently replace the main files.
