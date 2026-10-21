@@ -3,7 +3,7 @@
 Use this guide for YAML serialization, schema versions, workspace layout, saving, reloading, recovery, and external file changes.
 
 ## Required behavior
-- Source content, Styling files, CV Composer files, and related data are stored in user-accessible YAML files.
+- Master source, Styling files, CV definition files, and related data are stored in user-accessible YAML files.
 - YAML has explicit schema-version information.
 - Validate both YAML syntax and expected structure.
 - Validate Styling files before adding them to the style selection.
@@ -16,12 +16,13 @@ Use this guide for YAML serialization, schema versions, workspace layout, saving
 - Confirm destructive or potentially lossy operations.
 
 ## Implementation guidance
-- Keep serialization and filesystem details behind a clear boundary.
+- Keep serialization and filesystem details behind a clear boundary. Preserve the distinct responsibilities of master source, Styling, and CV definition.
 - Validate loaded data before exposing it to domain operations.
 - Use safe single-file writes, such as temporary-file plus atomic replacement where supported.
 - Treat a multi-file workspace update as a separate consistency problem; single-file atomic replacement does not make the whole workspace transactional.
 - Do not assume cloud-sync tools provide locking, ordering, or conflict-free writes.
 - Consider missing, duplicated, partially written, stale, or unsupported-schema files.
+- CV definitions must retain source IDs and the tags needed to offer explicit alternatives when a source entry is missing. Do not add snapshots or local content overrides unless a new approved decision changes the requirements.
 - Keep migrations explicit, testable, and non-destructive.
 - Never overwrite user data merely because parsing failed.
 

@@ -11,10 +11,10 @@ Use this guide when adding tests, reviewing changes, or changing quality checks.
 - Avoid brittle assertions about incidental formatting unless it is part of the product contract.
 
 ## High-value behavior to protect
-- Source replacement, new variant creation, and local override produce distinct outcomes.
-- Editing an override does not mutate reusable source content.
+- Source replacement and new variant creation produce distinct outcomes; CV definitions contain selection rather than saved content overrides.
+- Editing a source block follows an explicit replace-or-new-entry choice.
 - One CV's edits do not silently alter another CV.
-- A CV reopens and renders according to the approved content-preservation policy.
+- A CV reopens with its section/block skeleton, detects missing references, and offers explicit tag-based alternatives; rendered output remains visual history.
 - Invalid YAML and unsupported schema versions are reported without data loss.
 - External changes and unsaved local changes are detected and resolved explicitly.
 - Preview and PDF export share rendering behavior.
