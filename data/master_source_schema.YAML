@@ -1,0 +1,98 @@
+schema:
+  kind: master_source
+  version: 1
+
+candidate:
+  id: cand_01
+  name: Jane Doe
+  title: Ph.D.
+  credentials: []
+  location: Oslo, Norway
+  phone: "+47 ..."
+  email: jane@example.com
+  links:
+    - id: link_01
+      label: LinkedIn
+      url: https://linkedin.com/in/janedoe
+      icon: linkedin
+
+tags:
+  - id: tag_data_science
+    label: Data Science
+    category: content
+  - id: tag_researcher
+    label: Researcher
+    category: cv_type
+
+section_types:
+  - id: st_01J9X7K3QDLM
+    key: summary
+    label: Summary
+    fields:
+      - id: body
+        label: Summary
+        type: rich_text
+        required: true
+        multiple: false
+
+  - id: st_01J9X7K3Q8M4
+    key: work_experience
+    label: Work Experience
+    fields:
+      - id: employer
+        label: Employer
+        type: text
+        required: true
+      - id: role
+        label: Role
+        type: text
+        required: true
+      - id: start_date
+        label: Start date
+        type: date
+        required: true
+      - id: end_date
+        label: End date
+        type: date
+        required: false
+      - id: description
+        label: Description
+        type: rich_text
+        required: false
+
+sections:
+  - id: s_01J9A7C3Q7M4
+    section_type_id: st_01J9X7K3Q8M4
+    label: Work experience
+    tags:
+      - tag_data_science
+    block_refs:
+      - variant_id: variant_acme_data_scientist
+      - variant_id: variant_nordic_ai_lead
+    metadata:
+      created_at: 2026-10-21T10:00:00Z
+      updated_at: 2026-10-21T10:00:00Z
+
+canonical_entries:
+  - id: canonical_acme
+    label: Acme Corporation employment
+    status: active
+    variants:
+      - id: variant_acme_data_scientist
+        label: Data Scientist
+        tags:
+          - tag_data_science
+          - tag_researcher
+        fields:
+          employer: Acme Corporation
+          role: Data Scientist
+          start_date: 2020-01
+          end_date: 2023-05
+          description:
+            - type: paragraph
+              children:
+                - text: Built forecasting models for ...
+                  marks: []
+        metadata:
+          created_at: 2026-10-21T10:00:00Z
+          updated_at: 2026-10-21T10:00:00Z

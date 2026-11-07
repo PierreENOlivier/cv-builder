@@ -51,6 +51,12 @@ The master source owns reusable candidate data and structural definitions:
 
 A canonical entry represents one real-world item or reusable concept. Each variant has its own stable ID and tags. Tags are independent objects or references whose IDs do not depend on labels. Content tags relate variants; CV-type tags describe intended CV use. A source block is not a CV definition, and a section type is not a section instance.
 
+Example:
+- Canonical entry: 'PhD in Oceanography' corresponding to an item in the 'Education' section of the CV
+- Variant A: a detailed description suitable for a research CV
+- Variant B: a shorter description suitable for a data science CV
+- A CV selects one variant, identified by stable IDs.
+
 ### Styling
 
 Styling owns document-wide presentation: fonts, sizes, colors, spacing, alignment, borders, section labels, entry layouts, and page settings. Section types describe what fields and semantic arrangement a block needs; Styling determines the visual treatment. Styling must not contain candidate source content or CV selection state.
